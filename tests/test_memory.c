@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
-#include "monitor.h"   // Biblioteca real que contém obter_uso_memoria()
+#include "monitor.h"  
 
-/*
- * Verifica se o processo existe verificando se /proc/<pid> existe.
- */
+
+ // Verifica se o processo existe verificando se /proc/<pid> existe.
 int processo_existe(int pid) {
     char caminho[64];
     sprintf(caminho, "/proc/%d", pid);

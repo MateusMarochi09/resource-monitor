@@ -8,7 +8,7 @@ int main() {
     printf("===== TESTE DE I/O =====\nPID: ");
     scanf("%d", &pid);
 
-    printf("Tempo (s): ");
+    printf("Digite o tempo de monitoramento (segundos): ");
     scanf("%d", &duration);
 
     for (int i = 0; i < duration; i++) {
@@ -26,10 +26,9 @@ int main() {
             break;
         }
 
-        /*
-         * Cada linha do /proc/<pid>/io contém uma métrica.
-         * Usamos sscanf para capturar só as que queremos.
-         */
+
+         // Cada linha do /proc/<pid>/io contém uma métrica.
+         // Usamos sscanf para capturar só as que queremos.
         while (fgets(buf, sizeof(buf), fp)) {
             sscanf(buf, "read_bytes: %lu", &read_bytes);
             sscanf(buf, "write_bytes: %lu", &write_bytes);
