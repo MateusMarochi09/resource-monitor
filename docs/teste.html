@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gráfico de Snapshot</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    #grafico {
+      max-width: 500px;
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Monitoramento de Recursos</h2>
+
+  <canvas id="grafico"></canvas>
+
+  <script>
+    // Função para pegar o último arquivo dados_X.json
+    async function buscarUltimoJSON() {
+      const response = await fetch(".");
+      const text = await response.text();
+
+      // procura nomes tipo dados_123.json
+      const regex = /dados_(\d+)\.json/g;
+      let match, nums = [];
+
+      while ((match = regex.exec(text)) !== null) {
+        nums.push(parseInt(match[1], 10));
+      }
+
+      // pega o maior número encontrado
+      const ultimo = Math.max(...nums);
+      return `dados_${ultimo}.json`;
+    }
+
+    // Busca o último arquivo e carrega o gráfico
+    buscarUltimoJSON().then(jsonFile => {
+      fetch(jsonFile)
+        .then(res => res.json())
+        .then(data => {
+          const d = data[0];
+
+          const labels = ["CPU (%)", "RSS (KB)", "Bytes Lidos", "Bytes Escritos", "RX", "TX"];
+          const valores = [d.cpu, d.rss_kb, d.bytes_lidos, d.bytes_escritos, d.bytes_rx, d.bytes_tx];
+
+          const ctx = document.getElementById("grafico").getContext("2d");
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [{
+                label: "Valores",
+                data: valores
+              }]
+            }
+          });
+        });
+    });
+  </script>
+
+</body>
+</html>
+
