@@ -2,10 +2,8 @@
 #include <unistd.h>
 #include <time.h>
 
-/*
- * Estrutura usada apenas neste teste para armazenar
- * métricas básicas de CPU coletadas do /proc/<pid>.
- */
+// Estrutura usada apenas neste teste para armazenar
+// métricas básicas de CPU coletadas do /proc/<pid>.
 typedef struct {
     int pid;
     double cpu_percent;   // Porcentagem de uso de CPU (calculada pelo delta de utime e stime)
@@ -15,20 +13,16 @@ typedef struct {
     long ctx_switches;    // Trocas de contexto voluntárias + involuntárias
 } MetricasProcessoCPU;
 
-/*
- * Verifica se o processo existe conferindo
- * se o diretório /proc/<pid> está presente.
- */
+ // Verifica se o processo existe conferindo
+ // se o diretório /proc/<pid> está presente.
 int processo_existe(int pid) {
     char path[64];
     sprintf(path, "/proc/%d", pid);
     return access(path, F_OK) == 0;
 }
 
-/*
- * Obtém métricas de CPU localmente, sem conflito com a função do monitor real.
- * Lê dados de /proc/<pid>/stat e /proc/<pid>/status.
- */
+// Obtém métricas de CPU localmente, sem conflito com a função do monitor real.
+// Lê dados de /proc/<pid>/stat e /proc/<pid>/status.
 int obter_uso_cpu_local(int pid, MetricasProcessoCPU *prev, MetricasProcessoCPU *sample) {
     char path[64], buf[128];
     sprintf(path, "/proc/%d/stat", pid);
@@ -41,10 +35,8 @@ int obter_uso_cpu_local(int pid, MetricasProcessoCPU *prev, MetricasProcessoCPU 
     long utime, stime;
     int threads;
 
-    /*
-     * fscanf com %* ignora campos que não queremos.
-     * Lemos utime, stime e número de threads.
-     */
+    //fscanf com %* ignora campos que não queremos.
+    //Lemos utime, stime e número de threads
     fscanf(
         fp,
         "%*d %s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u "
@@ -74,9 +66,8 @@ int obter_uso_cpu_local(int pid, MetricasProcessoCPU *prev, MetricasProcessoCPU 
     sample->threads = threads;
     sample->ctx_switches = voluntary + nonvoluntary;
 
-    /*
-     * Se há uma leitura anterior, calculamos o delta para estimar o uso de CPU.
-     */
+
+    //Se há uma leitura anterior, calculamos o delta para estimar o uso de CPU.
     if (prev != NULL) {
         long delta_utime = utime - (long)(prev->user_time * ticks);
         long delta_stime = stime - (long)(prev->system_time * ticks);
@@ -94,7 +85,7 @@ int main(void) {
     printf("===== TESTE DE CPU =====\nPID: ");
     scanf("%d", &pid);
 
-    printf("Tempo (s): ");
+    printf("Digite o tempo de monitoramento (segundos): ");
     scanf("%d", &duration);
 
     // Struct que guarda a leitura anterior
