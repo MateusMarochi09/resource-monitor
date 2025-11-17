@@ -6,45 +6,41 @@
 #include <time.h> 
 #include "cgroup.h"
 
-#define CGROUP_BASE "/sys/fs/cgroup"
+#define CGROUP_BASE "/sys/fs/cgroup" // caminho base do cgroup
 
 // Verifica se o diretório do cgroup existe
 int cgroup_existe(const char *nome) {
     char caminho[256];
-    snprintf(caminho, sizeof(caminho), "%s/%s", CGROUP_BASE, nome);
-    return access(caminho, F_OK) == 0;
+    snprintf(caminho, sizeof(caminho), "%s/%s", CGROUP_BASE, nome); // monta caminho completo
+    return access(caminho, F_OK) == 0; // retorna 1 se existe, 0 caso contrário
 }
 
 // Cria um novo cgroup (diretório dentro de /sys/fs/cgroup)
 int cgroup_criar(const char *nome) {
     char caminho[256];
-    snprintf(caminho, sizeof(caminho), "%s/%s", CGROUP_BASE, nome);
+    snprintf(caminho, sizeof(caminho), "%s/%s", CGROUP_BASE, nome); // caminho completo
 
-    if (mkdir(caminho, 0755) != 0) {
-        perror("Erro ao criar cgroup");
+    if (mkdir(caminho, 0755) != 0) { // tenta criar diretório
+        perror("Erro ao criar cgroup"); // erro ao criar
         return -1;
     }
 
-    printf("[OK] cgroup criado: %s\n", caminho);
+    printf("[OK] cgroup criado: %s\n", caminho); // sucesso
     return 0;
 }
 
 // Move um processo (PID) para o cgroup escrevendo em cgroup.procs
 int cgroup_mover_processo(const char *nome, int pid) {
     char caminho[256];
-    snprintf(caminho, sizeof(caminho), "%s/%s/cgroup.procs", CGROUP_BASE, nome);
+    snprintf(caminho, sizeof(caminho), "%s/%s/cgroup.procs", CGROUP_BASE, nome); // arquivo procs
 
-    FILE *f = fopen(caminho, "w");
-    if (!f) {
-        perror("Erro ao abrir cgroup.procs para escrever");
-        return -1;
-    }
+    FILE *f = fopen(caminho, "w"); // abre para escrita
+    if (!f) { perror("Erro ao abrir cgroup.procs para escrever"); return -1; }
 
-    // Atribui o PID ao cgroup
-    fprintf(f, "%d", pid);
-    fclose(f);
+    fprintf(f, "%d", pid); // escreve PID no cgroup
+    fclose(f); // fecha arquivo
 
-    printf("[OK] Processo %d movido para cgroup '%s'\n", pid, nome);
+    printf("[OK] Processo %d movido para cgroup '%s'\n", pid, nome); // confirma
     return 0;
 }
 
@@ -53,41 +49,31 @@ int cgroup_aplicar_limites(const char *nome, int limite_cpu_usec, long limite_me
     char caminho[256];
     FILE *f;
 
-    // Limite de CPU → escreve em cpu.max (quota + periodo)
+    // Limite de CPU → escreve em cpu.max (quota + período)
     snprintf(caminho, sizeof(caminho), "%s/%s/cpu.max", CGROUP_BASE, nome);
     f = fopen(caminho, "w");
-    if (!f) {
-        perror("Erro ao aplicar limite de CPU");
-        return -1;
-    }
-    fprintf(f, "%d 100000", limite_cpu_usec);
+    if (!f) { perror("Erro ao aplicar limite de CPU"); return -1; }
+    fprintf(f, "%d 100000", limite_cpu_usec); // quota + período padrão
     fclose(f);
 
     // Limite de memória → memory.max
     snprintf(caminho, sizeof(caminho), "%s/%s/memory.max", CGROUP_BASE, nome);
     f = fopen(caminho, "w");
-    if (!f) {
-        perror("Erro ao aplicar limite de memória");
-        return -1;
-    }
-    fprintf(f, "%ld", limite_mem_bytes);
+    if (!f) { perror("Erro ao aplicar limite de memória"); return -1; }
+    fprintf(f, "%ld", limite_mem_bytes); // escreve limite
     fclose(f);
 
-    printf("[OK] Limites aplicados: CPU=%dus, Memória=%ld bytes\n",
-           limite_cpu_usec, limite_mem_bytes);
-
+    printf("[OK] Limites aplicados: CPU=%dus, Memória=%ld bytes\n", limite_cpu_usec, limite_mem_bytes);
     return 0;
 }
 
-// Lê um arquivo linha a linha e imprime na tela
+// Lê um arquivo linha a linha e imprime no terminal
 static void imprimir_arquivo_no_terminal(FILE *f) {
     char buffer[512];
-    while (fgets(buffer, sizeof(buffer), f)) {
-        printf("%s", buffer);  // imprime mantendo as quebras de linha
-    }
+    while (fgets(buffer, sizeof(buffer), f)) printf("%s", buffer); // imprime mantendo quebras
 }
 
-// Mostra estatísticas completas do cgroup direto do filesystem
+// Mostra estatísticas completas do cgroup
 int cgroup_ler_e_mostrar_estatisticas(const char *nome) {
     char caminho[256];
     FILE *f;
@@ -98,47 +84,46 @@ int cgroup_ler_e_mostrar_estatisticas(const char *nome) {
     snprintf(caminho, sizeof(caminho), "%s/%s/cpu.stat", CGROUP_BASE, nome);
     printf("\n--- CPU (cpu.stat) ---\n");
     f = fopen(caminho, "r");
-    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); }
-    else printf("(cpu.stat não disponível)\n");
+    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); } // exibe estatísticas CPU
+    else printf("(cpu.stat não disponível)\n"); // arquivo não encontrado
 
-    // Limite de CPU
     snprintf(caminho, sizeof(caminho), "%s/%s/cpu.max", CGROUP_BASE, nome);
     printf("\n--- LIMITE DE CPU (cpu.max) ---\n");
     f = fopen(caminho, "r");
-    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); }
+    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); } 
     else printf("(cpu.max não disponível)\n");
 
-    // --- Memória ---
+    // --- MEMÓRIA ---
     snprintf(caminho, sizeof(caminho), "%s/%s/memory.stat", CGROUP_BASE, nome);
     printf("\n--- MEMÓRIA (memory.stat) ---\n");
     f = fopen(caminho, "r");
-    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); }
+    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); } 
     else printf("(memory.stat não disponível)\n");
 
     snprintf(caminho, sizeof(caminho), "%s/%s/memory.max", CGROUP_BASE, nome);
     printf("\n--- LIMITE DE MEMÓRIA (memory.max) ---\n");
     f = fopen(caminho, "r");
-    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); }
+    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); } 
     else printf("(memory.max não disponível)\n");
 
-    // --- IO ---
+    // --- I/O ---
     snprintf(caminho, sizeof(caminho), "%s/%s/io.stat", CGROUP_BASE, nome);
     printf("\n--- I/O (io.stat) ---\n");
     f = fopen(caminho, "r");
-    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); }
+    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); } 
     else printf("(io.stat não disponível)\n");
 
     // --- PIDs ---
     snprintf(caminho, sizeof(caminho), "%s/%s/pids.current", CGROUP_BASE, nome);
     printf("\n--- PIDs (pids.current) ---\n");
     f = fopen(caminho, "r");
-    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); }
+    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); } 
     else printf("(pids.current não disponível)\n");
 
     snprintf(caminho, sizeof(caminho), "%s/%s/pids.max", CGROUP_BASE, nome);
     printf("\n--- Limite de PIDs (pids.max) ---\n");
     f = fopen(caminho, "r");
-    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); }
+    if (f) { imprimir_arquivo_no_terminal(f); fclose(f); } 
     else printf("(pids.max não disponível)\n");
 
     printf("\n=========================================================\n");
@@ -148,22 +133,16 @@ int cgroup_ler_e_mostrar_estatisticas(const char *nome) {
 // Gera um JSON com as estatísticas do cgroup
 int cgroup_gerar_relatorio(const char *nome) {
     char caminho_json[256];
-    snprintf(caminho_json, sizeof(caminho_json), "docs/relatorio_cgroup.json");
+    snprintf(caminho_json, sizeof(caminho_json), "docs/relatorio_cgroup.json"); // arquivo JSON final
 
-    FILE *json = fopen(caminho_json, "w");
-    if (!json) {
-        perror("Erro ao criar relatorio_cgroup.json");
-        return -1;
-    }
+    FILE *json = fopen(caminho_json, "w"); // abre para escrita
+    if (!json) { perror("Erro ao criar relatorio_cgroup.json"); return -1; }
 
-    // Timestamp atual para registrar no JSON
-    time_t agora = time(NULL);
+    time_t agora = time(NULL); // timestamp atual
     char tempo_buf[64];
-    strftime(tempo_buf, sizeof(tempo_buf), "%Y-%m-%d %H:%M:%S", localtime(&agora));
+    strftime(tempo_buf, sizeof(tempo_buf), "%Y-%m-%d %H:%M:%S", localtime(&agora)); // formata
 
-    fprintf(json, "{\n");
-    fprintf(json, "  \"cgroup\": \"%s\",\n", nome);
-    fprintf(json, "  \"gerado_em\": \"%s\",\n", tempo_buf);
+    fprintf(json, "{\n  \"cgroup\": \"%s\",\n  \"gerado_em\": \"%s\",\n", nome, tempo_buf);
 
     char caminho[256], key[128];
     long long value;
@@ -173,22 +152,14 @@ int cgroup_gerar_relatorio(const char *nome) {
     fprintf(json, "  \"cpu\": {\n");
     snprintf(caminho, sizeof(caminho), "%s/%s/cpu.stat", CGROUP_BASE, nome);
     f = fopen(caminho, "r");
-    if (f) {
-        while (fscanf(f, "%127s %lld", key, &value) == 2)
-            fprintf(json, "    \"%s\": %lld,\n", key, value);
-        fclose(f);
-    }
+    if (f) { while (fscanf(f, "%127s %lld", key, &value) == 2) fprintf(json, "    \"%s\": %lld,\n", key, value); fclose(f); }
     fprintf(json, "  },\n");
 
     // ----- MEMÓRIA -----
     fprintf(json, "  \"memory\": {\n");
     snprintf(caminho, sizeof(caminho), "%s/%s/memory.stat", CGROUP_BASE, nome);
     f = fopen(caminho, "r");
-    if (f) {
-        while (fscanf(f, "%127s %lld", key, &value) == 2)
-            fprintf(json, "    \"%s\": %lld,\n", key, value);
-        fclose(f);
-    }
+    if (f) { while (fscanf(f, "%127s %lld", key, &value) == 2) fprintf(json, "    \"%s\": %lld,\n", key, value); fclose(f); }
     fprintf(json, "  },\n");
 
     // ----- IO -----
@@ -197,10 +168,10 @@ int cgroup_gerar_relatorio(const char *nome) {
     f = fopen(caminho, "r");
     if (f) {
         while (fscanf(f, "%127s", key) == 1) {
-            if (strchr(key, '=')) {
+            if (strchr(key, '=')) { // detecta key=value
                 char *eq = strchr(key, '=');
                 *eq = '\0';
-                value = atoll(eq + 1);
+                value = atoll(eq + 1); // converte valor
                 fprintf(json, "    \"%s\": %lld,\n", key, value);
             }
         }
@@ -210,28 +181,17 @@ int cgroup_gerar_relatorio(const char *nome) {
 
     // ----- PIDs -----
     fprintf(json, "  \"pids\": {\n");
-
     snprintf(caminho, sizeof(caminho), "%s/%s/pids.current", CGROUP_BASE, nome);
     f = fopen(caminho, "r");
-    if (f) {
-        fscanf(f, "%lld", &value);
-        fprintf(json, "    \"current\": %lld,\n", value);
-        fclose(f);
-    }
+    if (f) { fscanf(f, "%lld", &value); fprintf(json, "    \"current\": %lld,\n", value); fclose(f); }
 
     snprintf(caminho, sizeof(caminho), "%s/%s/pids.max", CGROUP_BASE, nome);
     f = fopen(caminho, "r");
-    if (f) {
-        char buf[64];
-        fscanf(f, "%63s", buf);
-        fprintf(json, "    \"max\": \"%s\"\n", buf);
-        fclose(f);
-    }
+    if (f) { char buf[64]; fscanf(f, "%63s", buf); fprintf(json, "    \"max\": \"%s\"\n", buf); fclose(f); }
 
-    fprintf(json, "  }\n");
-    fprintf(json, "}\n");
+    fprintf(json, "  }\n}\n"); // fecha JSON
     fclose(json);
 
-    printf("[OK] Relatório JSON salvo em docs/relatorio_cgroup.json\n");
+    printf("[OK] Relatório JSON salvo em docs/relatorio_cgroup.json\n"); // confirma
     return 0;
 }
