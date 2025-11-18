@@ -4,17 +4,17 @@ Este projeto implementa um sistema de **monitoramento e análise de recursos** n
 
 ## Funcionalidades
 
-- **Resource Profiler:** Coleta métricas detalhadas de CPU, memória e I/O de processos, calculando percentuais de uso e taxas de acesso.
-- **Namespace Analyzer:** Analisa e compara namespaces de processos, medindo o overhead de criação e o nível de isolamento.
-- **Control Group Manager:** Cria e gerencia cgroups, aplica limites de CPU e memória, e gera relatórios de utilização.
-- **Exportação de Dados:** Gera arquivos CSV ou relatórios simples na pasta `docs`.
-- **Scripts de Visualização (Python):** Gera gráficos e relatórios de métricas de performance.
+* **Resource Profiler:** Coleta métricas detalhadas de CPU, memória e I/O de processos, calculando percentuais de uso e taxas de acesso.
+* **Namespace Analyzer:** Analisa e compara namespaces de processos, medindo o overhead de criação e o nível de isolamento.
+* **Control Group Manager:** Cria e gerencia cgroups, aplica limites de CPU e memória, e gera relatórios de utilização.
+* **Exportação de Dados:** Gera arquivos CSV ou relatórios simples na pasta `docs`.
+* **Scripts de Visualização (Python):** Gera gráficos e relatórios de métricas de performance.
 
 ## Pré-requisitos
 
-- **Sistema:** Ubuntu 24.04+ ou outra distribuição Linux com suporte a namespaces e cgroups  
-- **Compilador:** `gcc` ou `g++` (C/C++23)  
-- **Python (opcional, para scripts de visualização):** Python 3.x, bibliotecas `matplotlib` e `pandas`  
+* **Sistema:** Ubuntu 24.04+ ou outra distribuição Linux com suporte a namespaces e cgroups
+* **Compilador:** `gcc` ou `g++` (C/C++23)
+* **Python (opcional, para scripts de visualização):** Python 3.x, bibliotecas `matplotlib` e `pandas`
 
 ## Como Rodar o Projeto
 
@@ -106,26 +106,57 @@ deactivate
 
 💡 **Dica:** Sempre ative o venv antes de rodar scripts Python.
 
+---
+
+## Como Visualizar o Relatório HTML
+
+O projeto possui páginas HTML geradas automaticamente na pasta `docs`. Para visualizar:
+
+1. Entre na pasta `docs`:
+
+```bash
+cd docs
+```
+
+2. Inicie um servidor HTTP local:
+
+```bash
+python3 -m http.server
+```
+
+3. Abra no navegador:
+
+```
+http://localhost:8000/teste.html
+```
+
+---
+
 ## Testes e Experimentos
 
-O projeto inclui experimentos obrigatórios para validar monitoramento, isolamento e limitação de recursos:
+O projeto inclui experimentos para validar monitoramento, isolamento e limitação de recursos. Eles estão documentados na pasta `docs` no arquivo **`EXPERIMENTOS.md`**.
 
-1. **Overhead de Monitoramento:** mede o impacto do profiler no sistema.
-2. **Isolamento via Namespaces:** verifica visibilidade de recursos e overhead de criação.
-3. **Throttling de CPU:** avalia precisão da limitação de CPU via cgroups.
-4. **Limitação de Memória:** testa comportamento ao atingir limite de memória.
-5. **Limitação de I/O:** mede throughput e latência com limites aplicados.
+Os experimentos não são integrados ao código principal. Eles são executados separadamente, rodados diretamente pelo terminal, apenas para coleta e análise dos resultados.
+
+### Teste do Valgrind
+
+Também foi realizado o teste de vazamento de memória com **Valgrind**. Os resultados estão na pasta `docs`, no arquivo **`valgrind.md`**.
+
+---
 
 ## Contribuição dos Alunos
 
 ### Aluno 1 e 4 – Resource Profiler + Integração / Control Group Manager + Análise
 
-Contribuiu implementando os módulos de CPU e memória (`cpu_monitor.c`, `memory_monitor.c`), cálculos de percentuais e taxas, integração dos três componentes no `main.c`, definição das estruturas e funções em `monitor.h`, criação do Makefile geral para compilação do projeto, implementação do Cgroup Manager (`cgroup_manager.c`, `cgroup.h`), scripts de visualização (`visualize.py`), ferramentas de comparação (`compare_tools.py`) e geração de relatórios em HTML (`report.html`).
+**Mateus Marochi Andretta de Castro**
+Contribuiu implementando os módulos de CPU e memória (`cpu_monitor.c`, `memory_monitor.c`), cálculos de percentuais e taxas, integração dos três componentes no `main.c`, definição das estruturas e funções em `monitor.h`, criação do Makefile geral para compilação do projeto, implementação do Cgroup Manager (`cgroup_manager.c`, `cgroup.h`), scripts de visualização (`visualize.py`), ferramentas de comparação (`compare_tools.py`) e geração de relatórios em HTML (`teste.html`).
 
 ### Aluno 2 – Resource Profiler + Testes
 
-Contribuiu implementando os módulos de I/O e Network (`io_monitor.c`, `network_monitor.c`) e desenvolvendo os programas de teste na pasta `tests/`, que incluem testes de CPU, memória, I/O e rede para validar a precisão das medições.
+**Matheus Mazzucco dos Santos**
+Contribuiu implementando os módulos de I/O e Network (`io_monitor.c`, `network_monitor.c`) e desenvolvendo os programas de teste na pasta `tests/`, que incluem testes de CPU, memória, I/O e automação de todos os testes para validar a precisão das medições, realizou também o teste de vazemento de memória pelo método **Valgrind**
 
 ### Aluno 3 – Namespace Analyzer
 
-Contribuiu implementando a análise de namespaces (`namespace_analyser.c`, `namespace.h`), incluindo identificação e comparação de namespaces entre processos, e documentando a arquitetura do sistema no arquivo `architecture.md`.
+**Anderson Cesar de Azevedo de Souza Filho**
+Contribuiu implementando a análise de namespaces (`namespace_analyser.c`, `namespace.h`), incluindo identificação e comparação de namespaces entre processos, e documentando a arquitetura do sistema no arquivo `ARCHITECTURE.md`, realizou também a documentação dos experimentos.
