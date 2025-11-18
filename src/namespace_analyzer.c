@@ -11,11 +11,8 @@
 #include <ctype.h>
 #include <sys/time.h>
 
-#define TAM_BUFFER 1024
+#define TAM_BUFFER 2048
 
-// =============================
-// LISTAR NAMESPACES DE UM PID
-// =============================
 void listar_namespaces(int pid) {
     char caminho_diretorio[TAM_BUFFER], caminho_link[TAM_BUFFER];
 
@@ -38,8 +35,11 @@ void listar_namespaces(int pid) {
         // ignora . e ..
         if (entrada->d_name[0] == '.') continue;
 
-        // monta caminho do link simbólico
-        snprintf(caminho_link, sizeof(caminho_link), "%s/%s", caminho_diretorio, entrada->d_name);
+        // monta caminho do link simbólico de forma segura
+        size_t len = snprintf(caminho_link, sizeof(caminho_link), "%s/", caminho_diretorio);
+        if (len < sizeof(caminho_link)) {
+            strncat(caminho_link, entrada->d_name, sizeof(caminho_link) - len - 1);
+        }
 
         char destino[TAM_BUFFER] = {0};
 
@@ -53,8 +53,6 @@ void listar_namespaces(int pid) {
 
     closedir(diretorio);
 }
-
-
 // =============================================
 // LISTAR PROCESSOS QUE COMPARTILHAM UM NAMESPACE
 // =============================================
@@ -68,23 +66,19 @@ void encontrar_processos_no_namespace(const char *tipo_ns, const char *inode_ns)
     struct dirent *entrada;
     printf("\nProcessos no namespace %s (inode %s):\n", tipo_ns, inode_ns);
 
-    // percorre todos os diretórios numéricos de /proc
     while ((entrada = readdir(diretorio)) != NULL) {
-
-        // só entra se for número (PID)
         if (!isdigit(entrada->d_name[0])) continue;
 
         char caminho_ns[TAM_BUFFER];
         snprintf(caminho_ns, sizeof(caminho_ns), "/proc/%s/ns/%s", entrada->d_name, tipo_ns);
+        caminho_ns[sizeof(caminho_ns) - 1] = '\0';
 
         char destino[TAM_BUFFER] = {0};
-
-        // lê o inode do processo atual
         ssize_t n = readlink(caminho_ns, destino, sizeof(destino) - 1);
+        if (n >= (ssize_t)sizeof(destino)) n = sizeof(destino) - 1;
+
         if (n != -1) {
             destino[n] = '\0';
-
-            // verifica se o inode bate
             if (strstr(destino, inode_ns)) {
                 printf("  PID %s\n", entrada->d_name);
             }
@@ -93,7 +87,6 @@ void encontrar_processos_no_namespace(const char *tipo_ns, const char *inode_ns)
 
     closedir(diretorio);
 }
-
 
 // =============================
 // COMPARAR NAMESPACES ENTRE DOIS PROCESSOS
@@ -107,16 +100,16 @@ void comparar_namespaces(int pid1, int pid2) {
     printf("\nComparando namespaces de PID %d e PID %d:\n", pid1, pid2);
 
     for (int i = 0; i < 7; i++) {
-
-        // monta caminho para /proc/PID1/ns/tipo
         snprintf(caminho1, sizeof(caminho1), "/proc/%d/ns/%s", pid1, tipos_ns[i]);
-
-        // monta caminho para /proc/PID2/ns/tipo
         snprintf(caminho2, sizeof(caminho2), "/proc/%d/ns/%s", pid2, tipos_ns[i]);
+        caminho1[sizeof(caminho1) - 1] = '\0';
+        caminho2[sizeof(caminho2) - 1] = '\0';
 
-        // lê inode dos dois processos
         ssize_t n1 = readlink(caminho1, destino1, sizeof(destino1) - 1);
         ssize_t n2 = readlink(caminho2, destino2, sizeof(destino2) - 1);
+
+        if (n1 >= (ssize_t)sizeof(destino1)) n1 = sizeof(destino1) - 1;
+        if (n2 >= (ssize_t)sizeof(destino2)) n2 = sizeof(destino2) - 1;
 
         if (n1 == -1 || n2 == -1) {
             printf("  %s: erro ao ler namespace\n", tipos_ns[i]);
@@ -126,7 +119,6 @@ void comparar_namespaces(int pid1, int pid2) {
         destino1[n1] = '\0';
         destino2[n2] = '\0';
 
-        // compara inodes
         if (strcmp(destino1, destino2) == 0)
             printf("  %s: MESMO namespace\n", tipos_ns[i]);
         else
@@ -134,30 +126,25 @@ void comparar_namespaces(int pid1, int pid2) {
     }
 }
 
-
 // =============================
 // GERAR RELATÓRIO EM JSON
 // =============================
 void gerar_relatorio_namespaces(const char *nome_arquivo) {
     char arquivo_final[TAM_BUFFER];
 
-    // copia nome + garante espaço
     strncpy(arquivo_final, nome_arquivo, sizeof(arquivo_final) - 1);
     arquivo_final[sizeof(arquivo_final) - 1] = '\0';
 
-    // adiciona ".json" caso não tenha
     if (!strstr(arquivo_final, ".json")) {
         strncat(arquivo_final, ".json", sizeof(arquivo_final) - strlen(arquivo_final) - 1);
     }
 
-    // cria arquivo
     FILE *arquivo = fopen(arquivo_final, "w");
     if (!arquivo) {
         perror("Erro ao criar arquivo de relatório");
         return;
     }
 
-    // abre /proc
     DIR *diretorio = opendir("/proc");
     if (!diretorio) {
         perror("Erro ao abrir /proc");
@@ -168,31 +155,25 @@ void gerar_relatorio_namespaces(const char *nome_arquivo) {
     struct dirent *entrada;
     const char *tipos_ns[] = {"mnt", "uts", "pid", "net", "ipc", "user", "cgroup"};
 
-    fprintf(arquivo, "{\n");
-    fprintf(arquivo, "  \"namespace_report\": [\n");
-
+    fprintf(arquivo, "{\n  \"namespace_report\": [\n");
     int primeiro = 1;
 
-    // percorre todos os PIDs
     while ((entrada = readdir(diretorio)) != NULL) {
-
-        // ignora não-PIDs
         if (!isdigit(entrada->d_name[0])) continue;
 
         if (!primeiro) fprintf(arquivo, ",\n");
         primeiro = 0;
 
-        fprintf(arquivo, "    {\n");
-        fprintf(arquivo, "      \"pid\": %s,\n", entrada->d_name);
-        fprintf(arquivo, "      \"namespaces\": {\n");
+        fprintf(arquivo, "    {\n      \"pid\": %s,\n      \"namespaces\": {\n", entrada->d_name);
 
         char caminho_ns[TAM_BUFFER], destino[TAM_BUFFER];
 
-        // adiciona cada tipo de namespace ao JSON
         for (int i = 0; i < 7; i++) {
             snprintf(caminho_ns, sizeof(caminho_ns), "/proc/%s/ns/%s", entrada->d_name, tipos_ns[i]);
+            caminho_ns[sizeof(caminho_ns) - 1] = '\0';
 
             ssize_t n = readlink(caminho_ns, destino, sizeof(destino) - 1);
+            if (n >= (ssize_t)sizeof(destino)) n = sizeof(destino) - 1;
 
             if (n != -1) {
                 destino[n] = '\0';
@@ -204,12 +185,10 @@ void gerar_relatorio_namespaces(const char *nome_arquivo) {
             if (i < 6) fprintf(arquivo, ",\n");
         }
 
-        fprintf(arquivo, "\n      }\n");
-        fprintf(arquivo, "    }");
+        fprintf(arquivo, "\n      }\n    }");
     }
 
-    fprintf(arquivo, "\n  ]\n");
-    fprintf(arquivo, "}\n");
+    fprintf(arquivo, "\n  ]\n}\n");
 
     closedir(diretorio);
     fclose(arquivo);
@@ -217,17 +196,13 @@ void gerar_relatorio_namespaces(const char *nome_arquivo) {
     printf("Relatório de namespaces gerado em '%s'\n", arquivo_final);
 }
 
-
 // =============================
 // MEDIR OVERHEAD DE CRIAR NAMESPACE
 // =============================
 double medir_overhead_namespace() {
     struct timespec inicio, fim;
-
-    // marca tempo inicial
     clock_gettime(CLOCK_MONOTONIC, &inicio);
 
-    // cria processo
     pid_t pid = fork();
     if (pid < 0) {
         perror("Erro ao criar processo filho");
@@ -235,7 +210,6 @@ double medir_overhead_namespace() {
     }
 
     if (pid == 0) {
-        // FILHO → cria namespaces isolados
         if (unshare(CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS |
                     CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWCGROUP) < 0) {
             perror("Erro ao criar namespaces (unshare)");
@@ -244,16 +218,11 @@ double medir_overhead_namespace() {
         exit(0);
     }
 
-    // pai espera o filho
     waitpid(pid, NULL, 0);
-
-    // marca tempo final
     clock_gettime(CLOCK_MONOTONIC, &fim);
 
-    // calcula tempo em microssegundos
-    double tempo_us =
-        (fim.tv_sec - inicio.tv_sec) * 1e6 +
-        (fim.tv_nsec - inicio.tv_nsec) / 1e3;
+    double tempo_us = (fim.tv_sec - inicio.tv_sec) * 1e6 +
+                      (fim.tv_nsec - inicio.tv_nsec) / 1e3;
 
     printf("%.3f µs\n", tempo_us);
     return tempo_us;

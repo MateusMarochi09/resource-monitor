@@ -22,6 +22,9 @@ resource-monitor/
 ├── Makefile
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── teste.html
+│   ├── EXPERIMENTOS.md
+│   ├── valgrind.md
 │   └── arquivos_de_relatorios
 ├── include/
 │   ├── monitor.h
@@ -38,7 +41,8 @@ resource-monitor/
 ├── tests/
 │   ├── test_cpu.c
 │   ├── test_io.c
-│   └──  test_memory.c
+│   ├── test_memory.c
+│   └── all_tests.c
 ├── scripts/
 │   ├── visualize.py
 │   └── compare_tools.py
@@ -48,7 +52,7 @@ resource-monitor/
 
 ## 3. Componentes do Projeto
 
-### 3.1 Módulo de Monitoramento (`monitor.h` / `monitor.c`)
+### 3.1 Módulo de Monitoramento (`monitor.h` / `cpu_monitor.c`, `memory_monitor.c`, `network_monitor.c`, `io_monitor.c`)
 
 - **Funções principais**:
   - `obter_uso_cpu(pid, MetricasProcesso*)`
@@ -59,7 +63,7 @@ resource-monitor/
 - **Estrutura de dados**: `MetricasProcesso` armazena todas as métricas de CPU, memória, I/O e rede.
 - **Uso**: Integrado ao menu principal e aos testes unitários.
 
-### 3.2 Módulo Namespace (`namespace.h` / `namespace.c`)
+### 3.2 Módulo Namespace (`namespace.h` / `namespace_analyzer.c`)
 
 - **Funcionalidades**:
   - Listar namespaces de um processo (`listar_namespaces`)
@@ -91,18 +95,31 @@ resource-monitor/
 
 - Cada teste compilado em **binário separado**.
 - Valida métricas de CPU, memória e I/O sem executar o sistema completo.
+- Opção de rodar todos os testes de forma automática.
 
 ### 3.6 Makefile
 
 - Automatiza:
   - Compilação do projeto (`all`, `run`)
-  - Compilação/execução de testes (`cpu-test`, `memory-test`, `io-test`, `run-tests`)
+  - Compilação/execução de testes (`cpu-test`, `memory-test`, `io-test`, `all-tests`)
   - Limpeza (`clean`)
 - Cria objetos separados para `src` e `tests` e binários na pasta `bin`.
 
-### 3.7 Scripts de Visualização
+### 3.7 Scripts de Visualização e Dashboard web (`compare_tools.py`, `visualize.py`, `teste.html`)
 
 - Gerar gráficos e relatórios visuais a partir de arquivos JSON (`docs/dados_*.json`).
+- Gerar gráficos de comparação entre os dados extraídos
+
+### 3.8 Valgrind / Memory Leaks
+
+- Verificação de **memory leaks** realizada com **Valgrind**.
+- Arquivo de relatório gerado em `docs/valgrind.md`.
+- Garantia de que todas as funções de alocação dinâmica liberam memória corretamente.
+
+### 3.9 Documentação de Experimentos (`docs/EXPERIMENTOS.md`)
+
+- Registra **resultados de experimentos** realizados com o sistema.
+- Inclui testes de desempenho, limites de cgroup, overhead de namespaces e validação de métricas.
 
 ---
 
@@ -111,4 +128,4 @@ resource-monitor/
 1. **Menu principal (`main.c`)** → Escolha de módulo.
 2. **Módulo específico** → Coleta métricas/processa dados.
 3. **Exportação de métricas** → JSON em `docs/`.
-4. **(Opcional)** → Visualização gráfica via scripts Python.
+4. **Visualização** → Visualização gráfica via scripts Python.
