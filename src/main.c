@@ -306,7 +306,7 @@ void menu_principal() {
         printf("\n====================================\n");
         printf("      SISTEMA DE MONITORAMENTO\n");
         printf("====================================\n");
-        printf("1. Recource Profile\n");
+        printf("1. Resource Profile\n");
         printf("2. Namespace Analyser\n");
         printf("3. Control Group Manager\n");
         printf("0. Sair\n");
