@@ -7,7 +7,7 @@ Este projeto implementa um sistema de **monitoramento e análise de recursos** n
 * **Resource Profiler:** Coleta métricas detalhadas de CPU, memória e I/O de processos, calculando percentuais de uso e taxas de acesso.
 * **Namespace Analyzer:** Analisa e compara namespaces de processos, medindo o overhead de criação e o nível de isolamento.
 * **Control Group Manager:** Cria e gerencia cgroups, aplica limites de CPU e memória, e gera relatórios de utilização.
-* **Exportação de Dados:** Gera arquivos CSV ou relatórios simples na pasta `docs`.
+* **Exportação de Dados:** Gera arquivos JSON e relatórios simples na pasta `docs`.
 * **Scripts de Visualização (Python):** Gera gráficos e relatórios de métricas de performance.
 
 ## Pré-requisitos
